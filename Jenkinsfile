@@ -1,42 +1,69 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = "shaikafzalhussain/python-jenkins-sonar:${env.BUILD_NUMBER}"
+    }
+
     stages {
-        stage('Code Quality - SonarQube') {
+
+        stage('Code Quality (SonarQube)') {
             steps {
-                withSonarQubeEnv('SonarQubeServer') {
-                    sh 'sonar-scanner'
+                echo "🔍 Running SonarQube analysis..."
+                withSonarQubeEnv('Sonar') {
+                    dir('app') {
+                        sh 'sonar-scanner'
+                    }
                 }
             }
         }
 
-        stage('Test') {
+        stage('Unit Test + Coverage') {
             steps {
-                sh 'pytest --junitxml=report.xml --cov=. --cov-report=xml'
+                echo "🧪 Running unit tests and coverage..."
+                dir('app') {
+                    sh '''
+                    python3 -m venv venv
+                    source venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt pytest pytest-cov
+                    pytest --junitxml=report.xml --cov=. --cov-report=xml
+                    '''
+                }
             }
             post {
                 always {
-                    junit 'report.xml'
+                    junit 'app/report.xml'
                 }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Docker Build') {
             steps {
-                sh 'docker build -t yourdockerhubusername/python-jenkins-sonar:latest .'
+                echo "🐳 Building Docker image..."
+                sh "docker build -t ${DOCKER_IMAGE} ."
             }
         }
 
-        stage('Push to DockerHub') {
+        stage('Docker Push') {
             steps {
-                withCredentials([string(credentialsId: 'dockerhub-token', variable: 'DOCKER_TOKEN')]) {
+                echo "📦 Pushing Docker image to DockerHub..."
+                withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
-                    echo "$DOCKER_TOKEN" | docker login -u yourdockerhubusername --password-stdin
-                    docker push yourdockerhubusername/python-jenkins-sonar:latest
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    docker push ${DOCKER_IMAGE}
                     '''
                 }
             }
         }
     }
+
+    post {
+        success {
+            echo "✅ Pipeline completed successfully. Image pushed: ${DOCKER_IMAGE}"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check console logs for details."
+        }
+    }
 }
-	
