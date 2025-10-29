@@ -8,11 +8,10 @@ pipeline {
     stages {
 
         stage('Code Quality (SonarQube)') {
-            steps {
-                echo "🔍 Running SonarQube analysis..."
-                withSonarQubeEnv('sonar-scanner') {
-                    dir('app') {
-                        sh '/opt/sonar-scanner/bin/sonar-scanner -Dsonar.projectBaseDir=.'
+    steps {
+        echo "🔍 Running SonarQube analysis..."
+        withSonarQubeEnv('sonar-scanner') {
+            sh '/opt/sonar-scanner/bin/sonar-scanner'
 
                     }
                 }
