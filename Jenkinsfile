@@ -12,7 +12,7 @@ pipeline {
                 echo "🔍 Running SonarQube analysis..."
                 withSonarQubeEnv('sonar-scanner') {
                     dir('app') {
-                        sh '/opt/sonar-scanner/bin/sonar-scanner'
+                        sh '/opt/sonar-scanner/bin/sonar-scanner -Dsonar.projectBaseDir=.'
 
                     }
                 }
