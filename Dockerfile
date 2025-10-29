@@ -1,20 +1,20 @@
-# Start from the official Node.js image
-FROM node:18-alpine
+# Use an official Python image as base
+FROM python:3.9-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# Copy requirements first (for efficient Docker layer caching)
+COPY requirements.txt .
 
 # Install dependencies
-RUN npm install
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
+# Copy the rest of the app
 COPY . .
 
-# Expose the application port
-EXPOSE 3000
+# Expose port (change if your app uses another)
+EXPOSE 5000
 
-# Start the app
-CMD ["npm", "start"]
+# Command to run the app
+CMD ["python", "app.py"]
